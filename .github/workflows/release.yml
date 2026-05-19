@@ -21,15 +21,20 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore
-        run: dotnet restore
+        run: |
+          dotnet restore ./Loader/Loader.csproj
+          dotnet restore ./Loader/Plugin/Plugin.csproj
 
       - name: Build
-        run: dotnet build --configuration Release --no-restore
-
-      - name: Pack (opcional)
         run: |
-          dotnet pack --configuration Release -o ./artifacts
-        continue-on-error: true
+          dotnet build ./Loader/Loader.csproj --configuration Release --no-restore
+          dotnet build ./Loader/Plugin/Plugin.csproj --configuration Release --no-restore
+
+      - name: Empacotar plugin
+        run: |
+          New-Item -ItemType Directory -Force -Path ./artifacts | Out-Null
+          $pluginOut = "./Loader/Plugin/bin/Release/net8.0-windows"
+          Compress-Archive -Path "$pluginOut/*" -DestinationPath "./artifacts/PluginPackage.zip" -Force
 
       - name: Criar GitHub Release
         uses: softprops/action-gh-release@v1
