@@ -3,6 +3,8 @@ using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
+using System.Runtime.Serialization.Json;
+using System.Text;
 using Autodesk.Revit.UI;
 
 namespace RevitLoader.Bootstrap
@@ -31,12 +33,17 @@ namespace RevitLoader.Bootstrap
                     return Result.Failed;
                 }
 
-                // Se houver versao nova, baixa e substitui o pacote em cache.
+                // Se houver versao nova do plugin, baixa e substitui o pacote em cache.
                 var cacheRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), LoaderSettings.CacheFolderName);
                 var pluginFolder = Path.Combine(cacheRoot, LoaderSettings.CurrentPackageFolderName);
+                var cachedManifestPath = Path.Combine(cacheRoot, LoaderSettings.CachedManifestFileName);
+                var cachedManifest = TryLoadCachedManifest(cachedManifestPath);
+                var needsUpdate = cachedManifest == null ||
+                    VersionComparer.IsUpdateAvailable(cachedManifest.ParsedVersion, manifest.ParsedVersion) ||
+                    !Directory.Exists(pluginFolder);
 
                 // Baixa quando ha update ou quando nao existe nada em cache ainda.
-                if (localVersion == null || VersionComparer.IsUpdateAvailable(localVersion, manifest.ParsedVersion) || !Directory.Exists(pluginFolder))
+                if (needsUpdate)
                 {
                     if (manifest.PackageUrl == null)
                     {
@@ -44,6 +51,7 @@ namespace RevitLoader.Bootstrap
                         return Result.Failed;
                     }
                     pluginFolder = updateService.DownloadAndExtract(manifest.PackageUrl, cacheRoot);
+                    SaveManifestToCache(cachedManifestPath, manifest);
                 }
 
                 // Depois da validacao, carrega a DLL correta do pacote.
@@ -66,6 +74,33 @@ namespace RevitLoader.Bootstrap
             }
 
             return Result.Succeeded;
+        }
+
+        private static GitHubReleaseManifest? TryLoadCachedManifest(string cachedManifestPath)
+        {
+            if (string.IsNullOrWhiteSpace(cachedManifestPath) || !File.Exists(cachedManifestPath))
+            {
+                return null;
+            }
+
+            var json = File.ReadAllText(cachedManifestPath, Encoding.UTF8);
+            var serializer = new DataContractJsonSerializer(typeof(GitHubReleaseManifest));
+
+            using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
+            {
+                return serializer.ReadObject(stream) as GitHubReleaseManifest;
+            }
+        }
+
+        private static void SaveManifestToCache(string cachedManifestPath, GitHubReleaseManifest manifest)
+        {
+            var serializer = new DataContractJsonSerializer(typeof(GitHubReleaseManifest));
+
+            using (var stream = new MemoryStream())
+            {
+                serializer.WriteObject(stream, manifest);
+                File.WriteAllText(cachedManifestPath, Encoding.UTF8.GetString(stream.ToArray()));
+            }
         }
     }
 }

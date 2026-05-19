@@ -2,7 +2,7 @@
 <RevitAddIns>
   <AddIn Type="Application">
     <Name>RevitLoader</Name>
-    <Assembly>C:\Plug-in-Revit\Loader\bin\Release\RevitLoader.dll</Assembly>
+    <Assembly>C:\teste_loader\Loader\bin\Release\net8.0-windows\RevitLoader.dll</Assembly>
     <AddInId>8AE0E9C0-4E8A-49FC-90E2-93D8A6CEB4D0</AddInId>
     <FullClassName>RevitLoader.Bootstrap.LoaderApplication</FullClassName>
     <VendorId>YOUR</VendorId>
