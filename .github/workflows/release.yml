@@ -1,0 +1,40 @@
+# Workflow de Release automático
+# Dispara quando um tag como v1.0.0 é pushado
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Pack (opcional)
+        run: |
+          dotnet pack --configuration Release -o ./artifacts
+        continue-on-error: true
+
+      - name: Criar GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: ${{ github.ref }}
+          files: ./artifacts/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
