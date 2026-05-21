@@ -6,7 +6,7 @@ namespace HelloWorldPlugin
     {
         public Result OnStartup(UIControlledApplication application)
         {
-            TaskDialog.Show("Hello", "Hello World from the plugin.");
+            TaskDialog.Show("Hello", "teste");
             return Result.Succeeded;
         }
 

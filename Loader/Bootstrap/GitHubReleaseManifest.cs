@@ -26,6 +26,26 @@ namespace RevitLoader.Bootstrap
         [DataMember(Name = "releaseNotesUrl")]
         public string? ReleaseNotesUrl { get; set; }
 
+        // Metadados da release mais recente.
+        [DataMember(Name = "releaseId")]
+        public long? ReleaseId { get; set; }
+
+        [DataMember(Name = "releasePublishedAt")]
+        public string? ReleasePublishedAt { get; set; }
+
+        public DateTimeOffset ParsedReleasePublishedAt
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(ReleasePublishedAt) && DateTimeOffset.TryParse(ReleasePublishedAt, out var parsed))
+                {
+                    return parsed;
+                }
+
+                return DateTimeOffset.MinValue;
+            }
+        }
+
         public Version ParsedVersion
         {
             get

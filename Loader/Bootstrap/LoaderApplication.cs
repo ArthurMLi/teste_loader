@@ -22,6 +22,7 @@ namespace RevitLoader.Bootstrap
                 var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
                 httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("RevitLoader", localVersion?.ToString() ?? "1.0"));
                 var manifestService = new GitHubReleaseManifestService(httpClient);
+                var releaseApiService = new GitHubReleaseApiService(httpClient);
                 var updateService = new UpdatePackageService(httpClient);
                 var activationService = new PluginActivationService();
                 // O manifesto remoto diz qual pacote deve ser usado.
@@ -33,13 +34,34 @@ namespace RevitLoader.Bootstrap
                     return Result.Failed;
                 }
 
+                var latestRelease = releaseApiService.DownloadLatestRelease(LoaderSettings.ReleasesApiUrl);
+                if (latestRelease == null)
+                {
+                    TaskDialog.Show("Revit Loader", "Falha ao obter a release mais recente do GitHub.");
+                    return Result.Failed;
+                }
+
+                var asset = releaseApiService.ResolveAsset(latestRelease, LoaderSettings.ReleaseAssetName);
+                if (asset == null || string.IsNullOrWhiteSpace(asset.BrowserDownloadUrl))
+                {
+                    TaskDialog.Show("Revit Loader", "Asset do plugin nao encontrado na release mais recente.");
+                    return Result.Failed;
+                }
+
+                manifest.PackageUrl = asset.BrowserDownloadUrl;
+                manifest.ReleaseNotesUrl = latestRelease.HtmlUrl ?? manifest.ReleaseNotesUrl;
+                manifest.ReleaseId = latestRelease.Id;
+                manifest.ReleasePublishedAt = latestRelease.PublishedAt;
+
                 // Se houver versao nova do plugin, baixa e substitui o pacote em cache.
                 var cacheRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), LoaderSettings.CacheFolderName);
                 var pluginFolder = Path.Combine(cacheRoot, LoaderSettings.CurrentPackageFolderName);
                 var cachedManifestPath = Path.Combine(cacheRoot, LoaderSettings.CachedManifestFileName);
                 var cachedManifest = TryLoadCachedManifest(cachedManifestPath);
                 var needsUpdate = cachedManifest == null ||
-                    VersionComparer.IsUpdateAvailable(cachedManifest.ParsedVersion, manifest.ParsedVersion) ||
+                    cachedManifest.ReleaseId == null ||
+                    manifest.ReleaseId == null ||
+                    cachedManifest.ReleaseId != manifest.ReleaseId ||
                     !Directory.Exists(pluginFolder);
 
                 // Baixa quando ha update ou quando nao existe nada em cache ainda.
