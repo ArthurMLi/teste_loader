@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\teste_loader\\Loader\\Loader.csproj": {}
+    "C:\\a\\teste_loader\\Loader\\Loader.csproj": {}
   },
   "projects": {
-    "C:\\teste_loader\\Loader\\Loader.csproj": {
+    "C:\\a\\teste_loader\\Loader\\Loader.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\teste_loader\\Loader\\Loader.csproj",
+        "projectUniqueName": "C:\\a\\teste_loader\\Loader\\Loader.csproj",
         "projectName": "RevitLoader",
-        "projectPath": "C:\\teste_loader\\Loader\\Loader.csproj",
+        "projectPath": "C:\\a\\teste_loader\\Loader\\Loader.csproj",
         "packagesPath": "C:\\Users\\Pc Arthur\\.nuget\\packages\\",
-        "outputPath": "C:\\teste_loader\\Loader\\obj\\",
+        "outputPath": "C:\\a\\teste_loader\\Loader\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

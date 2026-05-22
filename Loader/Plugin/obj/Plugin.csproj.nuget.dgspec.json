@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\teste_loader\\Loader\\Plugin\\Plugin.csproj": {}
+    "C:\\a\\teste_loader\\Loader\\Plugin\\Plugin.csproj": {}
   },
   "projects": {
-    "C:\\teste_loader\\Loader\\Plugin\\Plugin.csproj": {
+    "C:\\a\\teste_loader\\Loader\\Plugin\\Plugin.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\teste_loader\\Loader\\Plugin\\Plugin.csproj",
+        "projectUniqueName": "C:\\a\\teste_loader\\Loader\\Plugin\\Plugin.csproj",
         "projectName": "HelloWorldPlugin",
-        "projectPath": "C:\\teste_loader\\Loader\\Plugin\\Plugin.csproj",
+        "projectPath": "C:\\a\\teste_loader\\Loader\\Plugin\\Plugin.csproj",
         "packagesPath": "C:\\Users\\Pc Arthur\\.nuget\\packages\\",
-        "outputPath": "C:\\teste_loader\\Loader\\Plugin\\obj\\",
+        "outputPath": "C:\\a\\teste_loader\\Loader\\Plugin\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
