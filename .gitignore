@@ -1,1 +1,13 @@
-testeUnitario/Executar/config/.env    
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.sln.docstates
+*.cache
+*.log
+Thumbs.db
+.DS_Store
+
+# Secrets
+versions/github.token

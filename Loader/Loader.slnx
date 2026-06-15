@@ -1,4 +1,0 @@
-<Solution>
-  <Project Path="Loader.csproj" />
-  <Project Path="Plugin\Plugin.csproj" />
-</Solution>

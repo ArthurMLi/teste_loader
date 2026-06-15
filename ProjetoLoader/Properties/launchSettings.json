@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "Revit": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Program Files\\Autodesk\\Revit 2026\\Revit.exe",
+      "commandLineArgs": "/nosplash",
+      "workingDirectory": "C:\\Program Files\\Autodesk\\Revit 2026"
+    }
+  },
+  "$schema": "http://json.schemastore.org/launchsettings.json"
+}
