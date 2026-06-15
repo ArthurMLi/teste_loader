@@ -448,6 +448,7 @@ namespace RevitLoader.Services
             string token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
             if (string.IsNullOrWhiteSpace(token))
             {
+                LogError(nameof(aplicarAtualizacao), "GITHUB_TOKEN não configurado.");
                 return new List<string>();
             }
 
@@ -455,12 +456,23 @@ namespace RevitLoader.Services
             foreach (string url in urls)
             {
                 var pluginName = GetPluginNameFromUrl(url);
+                if (string.IsNullOrWhiteSpace(pluginName)) continue;
+
                 var basePath = Path.Combine(AuthController.RevitLoaderBasePath, "plugins");
                 string pathDll = Path.Combine(basePath, pluginName) + "\\";
                 pastas.Add(pathDll);
-                aplicarAtualizacao(token, url, pathDll);
+
+                try
+                {
+                    // Mantendo síncrono para garantir que as DLLs estejam prontas antes do loader tentar carregar
+                    aplicarAtualizacao(token, url, pathDll);
+                }
+                catch (Exception ex)
+                {
+                    LogError(nameof(aplicarAtualizacao), $"Erro ao atualizar {pluginName}: {ex.Message}");
+                }
             }
-            return pastas;
+            return pastas.Distinct().ToList();
         }
         private static void aplicarAtualizacao(string token, string url, string caminhoArquivo)
         {

@@ -18,7 +18,7 @@ namespace RevitLoader.Bootstrap
 {
     public sealed class LoaderApplication : IExternalApplication
     {
-        private readonly List<String> activePlugins = new();
+        private readonly List<IExternalApplication> runningApplications = new();
         private readonly Queue<(string Folder, Type Type)> pendingApplications = new();
         private UIControlledApplication? uiApplication;
         private string? logPath;
@@ -48,21 +48,27 @@ namespace RevitLoader.Bootstrap
                     return Result.Succeeded;
                 }
 
-                List<string> selectedPlugins = GetSelectedPlugins();
+                List<string>? selectedPlugins = GetSelectedPlugins();
                 bool isShiftDown = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift);
 
-                if (isShiftDown || selectedPlugins.Count == 0)
+                // Se segurar Shift ou se for a primeira vez (null), abre a janela de seleção.
+                // Se o arquivo existir mas estiver vazio (lista vazia), respeita a escolha do usuário de não carregar nada.
+                if (isShiftDown || selectedPlugins == null)
                 {
-                    var availablePluginNames = updatedFolders.Select(f => Path.GetFileName(f.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))).ToList();
+                    var availablePluginNames = updatedFolders
+                        .Select(f => Path.GetFileName(f.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)))
+                        .Where(name => !string.IsNullOrEmpty(name))
+                        .ToList();
+
                     var selectionWindow = new PluginSelectionWindow(availablePluginNames, selectedPlugins);
                     if (selectionWindow.ShowDialog() == true)
                     {
                         selectedPlugins = selectionWindow.GetSelectedPlugins();
                         SaveSelectedPlugins(selectedPlugins);
                     }
-                    else if (selectedPlugins.Count == 0)
+                    else if (selectedPlugins == null)
                     {
-                        // First time and cancelled, load nothing
+                        // Primeira vez e cancelou sem escolher nada
                         return Result.Succeeded;
                     }
                 }
@@ -98,7 +104,7 @@ namespace RevitLoader.Bootstrap
                         }
 
                         string pluginName = Path.GetFileNameWithoutExtension(caminhoCompletoDll);
-                        if (!selectedPlugins.Contains(pluginName))
+                        if (!selectedPlugins.Contains(pluginName, StringComparer.OrdinalIgnoreCase))
                         {
                             continue;
                         }
@@ -189,8 +195,14 @@ namespace RevitLoader.Bootstrap
 
             try
             {
-                IExternalApplication appInstanciada = (IExternalApplication)Activator.CreateInstance(type);
-                var result = appInstanciada.OnStartup(uiApplication ?? (UIControlledApplication)sender);
+                if (Activator.CreateInstance(type) is IExternalApplication appInstanciada)
+                {
+                    var result = appInstanciada.OnStartup(uiApplication ?? (UIControlledApplication)sender);
+                    if (result == Result.Succeeded)
+                    {
+                        runningApplications.Add(appInstanciada);
+                    }
+                }
                 stopwatch.Stop();
             }
             catch (Exception ex)
@@ -198,41 +210,22 @@ namespace RevitLoader.Bootstrap
                 stopwatch.Stop();
                 LogError("Erro no OnStartup (Idling) de=" + type.FullName + " tempoMs=" + stopwatch.ElapsedMilliseconds + " - " + ex);
             }
-
-            activePlugins.Add(folder);
         }
 
         public Result OnShutdown(UIControlledApplication application)
         {
-            // Desliga os aplicativos no fechamento do Revit
-            DesligarAppsPorPasta(activePlugins, application);
-            return Result.Succeeded;
-        }
-
-        private void DesligarAppsPorPasta(List<string> caminhosDasPastas, UIControlledApplication application)
-        {
-            foreach (string caminhoPasta in caminhosDasPastas)
+            foreach (var app in runningApplications)
             {
                 try
                 {
-                    string caminhoCompletoDll = ObterCaminhoDll(caminhoPasta);
-                    if (caminhoCompletoDll == null) continue;
-
-                    // Como a DLL já está na memória, o LoadFrom apenas recupera a referência existente
-                    Assembly assemblyCarregado = Assembly.LoadFrom(caminhoCompletoDll);
-                    var classesApplication = ObterInstanciasApplication(assemblyCarregado);
-
-                    foreach (var app in classesApplication)
-                    {
-                        // Executa o método de desligamento de cada plugin filho
-                        app.OnShutdown(application);
-                    }
+                    app.OnShutdown(application);
                 }
                 catch (Exception ex)
                 {
-                    LogError("Erro no OnShutdown para pasta=" + caminhoPasta + " - " + ex);
+                    LogError("Erro no OnShutdown de=" + app.GetType().FullName + " - " + ex);
                 }
             }
+            return Result.Succeeded;
         }
 
         // Métodos auxiliares para evitar repetição de código (Clean Code)
@@ -255,18 +248,18 @@ namespace RevitLoader.Bootstrap
             }
         }
 
-        private List<string> GetSelectedPlugins()
+        private List<string>? GetSelectedPlugins()
         {
             string path = Path.Combine(AuthController.RevitLoaderBasePath, "selected_plugins.json");
-            if (!File.Exists(path)) return new List<string>();
+            if (!File.Exists(path)) return null;
             try
             {
                 string json = File.ReadAllText(path);
-                return JsonSerializer.Deserialize<List<string>>(json) ?? new List<string>();
+                return JsonSerializer.Deserialize<List<string>>(json);
             }
             catch
             {
-                return new List<string>();
+                return null;
             }
         }
 
