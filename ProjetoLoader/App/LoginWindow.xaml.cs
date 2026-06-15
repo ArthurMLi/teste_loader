@@ -2,6 +2,8 @@ using System.Windows;
 
 namespace RevitLoader.App
 {
+    // OBSOLETO: Esta janela não é mais utilizada no fluxo principal do programa.
+    // Mantida apenas para referência ou uso futuro, conforme solicitado.
     public partial class LoginWindow : Window
     {
         public string Email => txtEmail.Text?.Trim();

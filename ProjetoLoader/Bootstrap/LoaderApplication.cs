@@ -9,7 +9,9 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
+using System.Text.Json;
 using System.Threading.Tasks;
+using System.Windows.Input;
 
 
 namespace RevitLoader.Bootstrap
@@ -29,13 +31,42 @@ namespace RevitLoader.Bootstrap
                 logPath = Path.Combine(AuthController.RevitLoaderBasePath, "loader.log");
                 Directory.CreateDirectory(AuthController.RevitLoaderBasePath);
                 uiApplication = application;
+
+                /*
+                // Login flow disabled as per requirements
                 if (!AuthController.InitiateLoginFlow())
                 {
                     LogError("Startup interrompido por autenticação não concluída.");
                     return Result.Failed;
                 }
+                */
 
                 List<string> updatedFolders = GithubService.aplicarAtualizacao();
+
+                if (updatedFolders.Count == 0)
+                {
+                    return Result.Succeeded;
+                }
+
+                List<string> selectedPlugins = GetSelectedPlugins();
+                bool isShiftDown = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift);
+
+                if (isShiftDown || selectedPlugins.Count == 0)
+                {
+                    var availablePluginNames = updatedFolders.Select(f => Path.GetFileName(f.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))).ToList();
+                    var selectionWindow = new PluginSelectionWindow(availablePluginNames, selectedPlugins);
+                    if (selectionWindow.ShowDialog() == true)
+                    {
+                        selectedPlugins = selectionWindow.GetSelectedPlugins();
+                        SaveSelectedPlugins(selectedPlugins);
+                    }
+                    else if (selectedPlugins.Count == 0)
+                    {
+                        // First time and cancelled, load nothing
+                        return Result.Succeeded;
+                    }
+                }
+
                 var assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? AppDomain.CurrentDomain.BaseDirectory;
                 var manifestListPath = Path.Combine(assemblyDir, "manifest-list.txt");
                 var cacheRoot = Path.Combine(assemblyDir, "cache");
@@ -67,9 +98,8 @@ namespace RevitLoader.Bootstrap
                         }
 
                         string pluginName = Path.GetFileNameWithoutExtension(caminhoCompletoDll);
-                        if (!AuthController.ValidatePluginAccess(pluginName))
+                        if (!selectedPlugins.Contains(pluginName))
                         {
-                            LogError("Plugin bloqueado pela API=" + pluginName + " endpoint=AuthController" + pluginName + "/validar");
                             continue;
                         }
 
@@ -223,6 +253,32 @@ namespace RevitLoader.Bootstrap
             {
                 yield return (IExternalApplication)Activator.CreateInstance(tipo);
             }
+        }
+
+        private List<string> GetSelectedPlugins()
+        {
+            string path = Path.Combine(AuthController.RevitLoaderBasePath, "selected_plugins.json");
+            if (!File.Exists(path)) return new List<string>();
+            try
+            {
+                string json = File.ReadAllText(path);
+                return JsonSerializer.Deserialize<List<string>>(json) ?? new List<string>();
+            }
+            catch
+            {
+                return new List<string>();
+            }
+        }
+
+        private void SaveSelectedPlugins(List<string> selected)
+        {
+            string path = Path.Combine(AuthController.RevitLoaderBasePath, "selected_plugins.json");
+            try
+            {
+                string json = JsonSerializer.Serialize(selected);
+                File.WriteAllText(path, json);
+            }
+            catch { }
         }
 
         private void LogError(string message)

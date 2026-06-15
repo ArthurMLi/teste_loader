@@ -9,6 +9,8 @@ using System.Windows;
 
 namespace RevitLoader.App
 {
+    // OBSOLETO: Este controlador não é mais utilizado no fluxo principal do programa.
+    // Mantido apenas para referência ou uso futuro, conforme solicitado.
     public static class AuthController
     {
         private static readonly HttpClient Client = new HttpClient();
